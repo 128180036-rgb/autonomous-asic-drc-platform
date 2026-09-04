@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Autonomous ASIC DRC Platform"
+description = "A research prototype for parsing ASIC layout data, running technology-aware DRC analysis, visualizing constraint relationships, and evaluating validated reinforcement-learning repair actions."
+version = "1.0.0"
+id = "artifacts/asic-drc-platform"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25003
+
+[services.development]
+run = "pnpm --filter @workspace/asic-drc-platform run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/asic-drc-platform", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/asic-drc-platform/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25003"
+BASE_PATH = "/"

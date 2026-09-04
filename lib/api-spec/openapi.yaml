@@ -1,0 +1,688 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: workspace
+    description: Active layout workspace and technology profiles
+  - name: analysis
+    description: DRC analysis and constraint graph operations
+  - name: repair
+    description: Validated repair and verification operations
+  - name: training
+    description: Reinforcement learning experiment controls
+  - name: experiments
+    description: Saved experiment results
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /technologies:
+    get:
+      operationId: listTechnologies
+      tags: [workspace]
+      summary: List supported technology profiles
+      responses:
+        "200":
+          description: Technology profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TechnologyProfile"
+  /layout/demo:
+    post:
+      operationId: generateDemoLayout
+      tags: [workspace]
+      summary: Generate a deterministic synthetic benchmark
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DemoLayoutInput"
+      responses:
+        "200":
+          description: Parsed synthetic layout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LayoutSummary"
+  /layout/parse:
+    post:
+      operationId: parseLayout
+      tags: [workspace]
+      summary: Parse supported DEF and LEF text
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LayoutInput"
+      responses:
+        "200":
+          description: Parsed layout summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LayoutSummary"
+        "400":
+          description: Invalid input
+  /layout:
+    get:
+      operationId: getLayout
+      tags: [workspace]
+      summary: Get the active parsed layout
+      responses:
+        "200":
+          description: Active layout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Layout"
+  /drc/run:
+    post:
+      operationId: runDrc
+      tags: [analysis]
+      summary: Run the supported rule engine
+      responses:
+        "200":
+          description: DRC results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DrcResults"
+  /drc/results:
+    get:
+      operationId: getDrcResults
+      tags: [analysis]
+      summary: Get the latest DRC results
+      responses:
+        "200":
+          description: DRC results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DrcResults"
+  /graph/build:
+    post:
+      operationId: buildConstraintGraph
+      tags: [analysis]
+      summary: Build a technology-aware constraint graph
+      responses:
+        "200":
+          description: Constraint graph
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConstraintGraph"
+  /graph:
+    get:
+      operationId: getConstraintGraph
+      tags: [analysis]
+      summary: Get the latest constraint graph
+      responses:
+        "200":
+          description: Constraint graph
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConstraintGraph"
+  /repair/start:
+    post:
+      operationId: startRepair
+      tags: [repair]
+      summary: Initialize the repair environment
+      responses:
+        "200":
+          description: Repair session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepairSession"
+  /repair/preview:
+    post:
+      operationId: previewRepairAction
+      tags: [repair]
+      summary: Preview one repair action without committing it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepairStepInput"
+      responses:
+        "200":
+          description: Candidate repair preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepairPreview"
+  /repair/step:
+    post:
+      operationId: performRepairStep
+      tags: [repair]
+      summary: Apply one validated repair action
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepairStepInput"
+      responses:
+        "200":
+          description: Updated repair session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepairSession"
+  /repair/undo:
+    post:
+      operationId: undoRepairAction
+      tags: [repair]
+      summary: Undo the last accepted repair action
+      responses:
+        "200":
+          description: Updated repair session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepairSession"
+  /repair/reset:
+    post:
+      operationId: resetRepairLayout
+      tags: [repair]
+      summary: Restore the immutable baseline layout
+      responses:
+        "200":
+          description: Restored layout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Layout"
+  /repair/run:
+    post:
+      operationId: runAutonomousRepair
+      tags: [repair]
+      summary: Run bounded autonomous repair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepairRunInput"
+      responses:
+        "200":
+          description: Completed repair session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepairSession"
+  /verify:
+    post:
+      operationId: verifyLayout
+      tags: [repair]
+      summary: Run final complete verification
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Verification"
+  /results:
+    get:
+      operationId: getResults
+      tags: [repair]
+      summary: Get the current before and after result set
+      responses:
+        "200":
+          description: Result summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResultSummary"
+  /diff:
+    get:
+      operationId: getGeometryDiff
+      tags: [repair]
+      summary: Compare current geometry with the immutable baseline
+      responses:
+        "200":
+          description: Geometry diff
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeometryDiff"
+  /training/run:
+    post:
+      operationId: runTraining
+      tags: [training]
+      summary: Run a bounded DQN training simulation on the active layout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingInput"
+      responses:
+        "200":
+          description: Training metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingResult"
+  /experiments:
+    get:
+      operationId: listExperiments
+      tags: [experiments]
+      summary: List saved experiments
+      responses:
+        "200":
+          description: Experiments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Experiment"
+    post:
+      operationId: saveExperiment
+      tags: [experiments]
+      summary: Save the current experiment result
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExperimentInput"
+      responses:
+        "201":
+          description: Saved experiment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Experiment"
+  /export/def:
+    get:
+      operationId: exportDef
+      tags: [repair]
+      summary: Export the repaired layout as DEF text
+      responses:
+        "200":
+          description: Repaired DEF
+          content:
+            text/plain:
+              schema:
+                type: string
+  /export/report:
+    get:
+      operationId: exportReport
+      tags: [repair]
+      summary: Export a professional text report
+      responses:
+        "200":
+          description: DRC report
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    TechnologyProfile:
+      type: object
+      required: [id, name, description, availableRules, status]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        availableRules:
+          type: array
+          items: { type: string }
+        status: { type: string }
+    DemoLayoutInput:
+      type: object
+      required: [technology, seed]
+      properties:
+        technology: { type: string }
+        seed: { type: number }
+    LayoutInput:
+      type: object
+      required: [technology, defText, lefText]
+      properties:
+        technology: { type: string }
+        defText: { type: string, minLength: 1 }
+        lefText: { type: string, minLength: 1 }
+    LayoutSummary:
+      type: object
+      required: [id, source, technology, design, dieWidth, dieHeight, cells, nets, pins, wires, vias, layers, parsedAt, warnings]
+      properties:
+        id: { type: string }
+        source: { type: string }
+        technology: { type: string }
+        design: { type: string }
+        dieWidth: { type: number }
+        dieHeight: { type: number }
+        cells: { type: number }
+        nets: { type: number }
+        pins: { type: number }
+        wires: { type: number }
+        vias: { type: number }
+        layers: { type: number }
+        parsedAt: { type: string }
+        warnings:
+          type: array
+          items: { type: string }
+    Layout:
+      type: object
+      required: [summary, objects]
+      properties:
+        summary:
+          $ref: "#/components/schemas/LayoutSummary"
+        objects:
+          type: array
+          items:
+            $ref: "#/components/schemas/LayoutObject"
+    LayoutObject:
+      type: object
+      required: [id, kind, layer, x, y, width, height, label, net]
+      properties:
+        id: { type: string }
+        kind: { type: string }
+        layer: { type: string }
+        x: { type: number }
+        y: { type: number }
+        width: { type: number }
+        height: { type: number }
+        label: { type: string }
+        net: { type: string }
+        repaired: { type: boolean }
+    Violation:
+      type: object
+      required: [id, rule, type, severity, layer, objectId, x, y, width, height, measured, required, amount, net, suggestedActions]
+      properties:
+        id: { type: string }
+        rule: { type: string }
+        type: { type: string }
+        severity: { type: string }
+        layer: { type: string }
+        objectId: { type: string }
+        x: { type: number }
+        y: { type: number }
+        width: { type: number }
+        height: { type: number }
+        measured: { type: number }
+        required: { type: number }
+        amount: { type: number }
+        net: { type: string }
+        suggestedActions:
+          type: array
+          items: { type: string }
+        resolved: { type: boolean }
+    DrcResults:
+      type: object
+      required: [status, violations, total, byType, byLayer, bySeverity, affectedNets, affectedCells, ranAt]
+      properties:
+        status: { type: string }
+        violations:
+          type: array
+          items: { $ref: "#/components/schemas/Violation" }
+        total: { type: number }
+        byType:
+          type: object
+          additionalProperties: { type: number }
+        byLayer:
+          type: object
+          additionalProperties: { type: number }
+        bySeverity:
+          type: object
+          additionalProperties: { type: number }
+        affectedNets: { type: number }
+        affectedCells: { type: number }
+        ranAt: { type: string }
+    GraphNode:
+      type: object
+      required: [id, label, kind, x, y, degree]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        kind: { type: string }
+        x: { type: number }
+        y: { type: number }
+        degree: { type: number }
+    GraphEdge:
+      type: object
+      required: [id, source, target, relation]
+      properties:
+        id: { type: string }
+        source: { type: string }
+        target: { type: string }
+        relation: { type: string }
+    ConstraintGraph:
+      type: object
+      required: [nodes, edges, components, clusters, builtAt]
+      properties:
+        nodes:
+          type: array
+          items: { $ref: "#/components/schemas/GraphNode" }
+        edges:
+          type: array
+          items: { $ref: "#/components/schemas/GraphEdge" }
+        components: { type: number }
+        clusters: { type: number }
+        builtAt: { type: string }
+    RepairStepInput:
+      type: object
+      required: [action]
+      properties:
+        action: { type: string }
+        violationId: { type: string }
+    RepairRunInput:
+      type: object
+      required: [maxSteps, seed]
+      properties:
+        maxSteps: { type: number, minimum: 1, maximum: 100 }
+        seed: { type: number }
+    RewardComponents:
+      type: object
+      required: [violationReduction, newViolations, wirelengthCost, viaCost, connectivityPenalty, repairCost, total]
+      properties:
+        violationReduction: { type: number }
+        newViolations: { type: number }
+        wirelengthCost: { type: number }
+        viaCost: { type: number }
+        connectivityPenalty: { type: number }
+        repairCost: { type: number }
+        total: { type: number }
+    RepairAction:
+      type: object
+      required: [step, action, violationId, status, reward, before, after, timestamp]
+      properties:
+        step: { type: number }
+        action: { type: string }
+        violationId: { type: string }
+        status: { type: string }
+        reward: { $ref: "#/components/schemas/RewardComponents" }
+        before: { type: number }
+        after: { type: number }
+        timestamp: { type: string }
+    RepairSession:
+      type: object
+      required: [status, episode, step, maxSteps, initialViolations, currentViolations, currentReward, actions, history, epsilon, connectivity]
+      properties:
+        status: { type: string }
+        episode: { type: number }
+        step: { type: number }
+        maxSteps: { type: number }
+        initialViolations: { type: number }
+        currentViolations: { type: number }
+        currentReward: { type: number }
+        actions: { type: number }
+        history:
+          type: array
+          items: { $ref: "#/components/schemas/RepairAction" }
+        epsilon: { type: number }
+        connectivity: { type: string }
+        currentViolation:
+          anyOf:
+            - $ref: "#/components/schemas/Violation"
+            - type: "null"
+    RepairPreview:
+      type: object
+      required: [action, violationId, accepted, status, before, after, candidateObjects, candidateDrc]
+      properties:
+        action: { type: string }
+        violationId: { type: string }
+        accepted: { type: boolean }
+        status: { type: string }
+        before: { type: number }
+        after: { type: number }
+        candidateObjects:
+          type: array
+          items: { $ref: "#/components/schemas/LayoutObject" }
+        candidateDrc: { $ref: "#/components/schemas/DrcResults" }
+    Verification:
+      type: object
+      required: [status, initialViolations, finalViolations, violationsRepaired, newViolations, repairActions, wirelengthBefore, wirelengthAfter, viaCountBefore, viaCountAfter, congestionBefore, congestionAfter, connectivity]
+      properties:
+        status: { type: string }
+        initialViolations: { anyOf: [{ type: number }, { type: string }] }
+        finalViolations: { anyOf: [{ type: number }, { type: string }] }
+        violationsRepaired: { anyOf: [{ type: number }, { type: string }] }
+        newViolations: { anyOf: [{ type: number }, { type: string }] }
+        repairActions: { anyOf: [{ type: number }, { type: string }] }
+        wirelengthBefore: { anyOf: [{ type: number }, { type: string }] }
+        wirelengthAfter: { anyOf: [{ type: number }, { type: string }] }
+        viaCountBefore: { anyOf: [{ type: number }, { type: string }] }
+        viaCountAfter: { anyOf: [{ type: number }, { type: string }] }
+        congestionBefore: { anyOf: [{ type: number }, { type: string }] }
+        congestionAfter: { anyOf: [{ type: number }, { type: string }] }
+        connectivity: { type: string }
+        exportParseStatus: { type: string }
+        exportDrcStatus: { type: string }
+        exportDrcViolations: { anyOf: [{ type: number }, { type: string }] }
+    ResultSummary:
+      type: object
+      required: [layout, initial, final, verification, lastAction]
+      properties:
+        layout: { $ref: "#/components/schemas/LayoutSummary" }
+        initial: { $ref: "#/components/schemas/DrcResults" }
+        final: { $ref: "#/components/schemas/DrcResults" }
+        verification: { $ref: "#/components/schemas/Verification" }
+        lastAction:
+          anyOf:
+            - $ref: "#/components/schemas/RepairAction"
+            - type: "null"
+    GeometryDiffEntry:
+      type: object
+      required: [id, kind, status, before, after]
+      properties:
+        id: { type: string }
+        kind: { type: string }
+        status: { type: string }
+        before:
+          anyOf:
+            - $ref: "#/components/schemas/LayoutObject"
+            - type: "null"
+        after:
+          anyOf:
+            - $ref: "#/components/schemas/LayoutObject"
+            - type: "null"
+    GeometryDiff:
+      type: object
+      required: [status, counts, entries]
+      properties:
+        status: { type: string }
+        counts:
+          type: object
+          required: [added, removed, modified, unchanged]
+          properties:
+            added: { type: number }
+            removed: { type: number }
+            modified: { type: number }
+            unchanged: { type: number }
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/GeometryDiffEntry" }
+    TrainingInput:
+      type: object
+      required: [episodes, learningRate, gamma, epsilonStart, epsilonEnd, seed]
+      properties:
+        episodes: { type: number, minimum: 1, maximum: 1000 }
+        learningRate: { type: number }
+        gamma: { type: number }
+        epsilonStart: { type: number }
+        epsilonEnd: { type: number }
+        seed: { type: number }
+    TrainingPoint:
+      type: object
+      required: [episode, reward, loss, epsilon, captureRate, violations]
+      properties:
+        episode: { type: number }
+        reward: { type: number }
+        loss: { type: number }
+        epsilon: { type: number }
+        captureRate: { type: number }
+        violations: { type: number }
+    TrainingResult:
+      type: object
+      required: [status, episodes, agent, points, bestReward, finalCaptureRate]
+      properties:
+        status: { type: string }
+        episodes: { type: number }
+        agent: { type: string }
+        points:
+          type: array
+          items: { $ref: "#/components/schemas/TrainingPoint" }
+        bestReward: { type: number }
+        finalCaptureRate: { type: number }
+    ExperimentInput:
+      type: object
+      required: [technology, design, seed, method]
+      properties:
+        technology: { type: string }
+        design: { type: string }
+        seed: { type: number }
+        method: { type: string }
+    Experiment:
+      type: object
+      required: [id, date, technology, design, seed, method, initialViolations, finalViolations, reward, actions, runtime, status]
+      properties:
+        id: { type: string }
+        date: { type: string }
+        technology: { type: string }
+        design: { type: string }
+        seed: { type: number }
+        method: { type: string }
+        initialViolations: { type: number }
+        finalViolations: { type: number }
+        reward: { type: number }
+        actions: { type: number }
+        runtime: { anyOf: [{ type: number }, { type: string }] }
+        status: { type: string }
+
